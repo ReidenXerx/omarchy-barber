@@ -1,0 +1,25 @@
+  "style.bar.barber": {
+    "icon": "󱥇",
+    "label": "Edit on the bar",
+    "aliases": [
+      "barber",
+      "edit bar",
+      "status bar",
+      "bar widgets",
+      "remove widget",
+      "add widget",
+      "move widget"
+    ],
+    "action": "omarchy-shell shell toggle reidenxerx.barber '{}'"
+  },
+  "style.bar.barber-layouts": {
+    "icon": "󰌨",
+    "label": "Bar layouts",
+    "aliases": [
+      "barber layouts",
+      "bar profiles",
+      "auto bar",
+      "bar rules"
+    ],
+    "action": "omarchy-shell shell toggle reidenxerx.barber '{\"panel\":\"layouts\"}'"
+  },
