@@ -102,4 +102,8 @@ node tests/model-test.js            # the bar, changes and their undo, layouts, 
 python3 tests/menu_install_test.py  # the menu installer, in a sandbox
 ```
 
+## Support
+
+If Barber is useful to you, you can support its development on [Donatello](https://donatello.to/DuduPhudu).
+
 MIT license.
