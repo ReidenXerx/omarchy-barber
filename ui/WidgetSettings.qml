@@ -42,6 +42,9 @@ Item {
         spacing: Style.space(3)
 
         Text {
+          // Widget names come from other people's plugin manifests, which
+          // this plugin only truncates. Rendered literally, not interpreted.
+          textFormat: Text.PlainText
           width: parent.width
           elide: Text.ElideRight
           text: form.chip && form.service ? form.service.widgetName(form.chip.id) : "Pick a widget on the bar"
@@ -52,6 +55,9 @@ Item {
         }
 
         Text {
+          // Widget names come from other people's plugin manifests, which
+          // this plugin only truncates. Rendered literally, not interpreted.
+          textFormat: Text.PlainText
           width: parent.width
           wrapMode: Text.Wrap
           text: !form.chip ? ""
@@ -64,6 +70,9 @@ Item {
       }
 
       Text {
+        // Widget names come from other people's plugin manifests, which
+        // this plugin only truncates. Rendered literally, not interpreted.
+        textFormat: Text.PlainText
         visible: form.chip !== null && form.fields.length === 0
         width: parent.width
         wrapMode: Text.Wrap
@@ -86,6 +95,9 @@ Item {
           spacing: Style.space(4)
 
           Text {
+            // Widget names come from other people's plugin manifests, which
+            // this plugin only truncates. Rendered literally, not interpreted.
+            textFormat: Text.PlainText
             visible: row.field !== null && row.field.type !== "boolean"
             width: parent.width
             wrapMode: Text.Wrap
@@ -107,6 +119,9 @@ Item {
           }
 
           Text {
+            // Widget names come from other people's plugin manifests, which
+            // this plugin only truncates. Rendered literally, not interpreted.
+            textFormat: Text.PlainText
             visible: text !== ""
             width: parent.width
             wrapMode: Text.Wrap
@@ -128,6 +143,9 @@ Item {
                 onToggled: form.commit(row.field, Model.coerce(row.field, row.field.value !== true))
               }
               Text {
+                // Widget names come from other people's plugin manifests, which
+                // this plugin only truncates. Rendered literally, not interpreted.
+                textFormat: Text.PlainText
                 anchors.verticalCenter: parent.verticalCenter
                 text: row.field.label
                 color: form.ink
@@ -217,6 +235,9 @@ Item {
           Component {
             id: unknownField
             Text {
+              // Widget names come from other people's plugin manifests, which
+              // this plugin only truncates. Rendered literally, not interpreted.
+              textFormat: Text.PlainText
               wrapMode: Text.Wrap
               text: "Barber cannot edit this kind of setting; change it in Shell Settings."
               color: form.faint

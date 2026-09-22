@@ -133,6 +133,9 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
 
                 Text {
+                  // Widget names come from other people's plugin manifests, which
+                  // this plugin only truncates. Rendered literally, not interpreted.
+                  textFormat: Text.PlainText
                   width: parent.width
                   elide: Text.ElideRight
                   text: layoutRow.layout ? layoutRow.layout.name + (layoutRow.worn ? "  · on the bar now" : "") : ""
@@ -143,6 +146,9 @@ Item {
                 }
 
                 Text {
+                  // Widget names come from other people's plugin manifests, which
+                  // this plugin only truncates. Rendered literally, not interpreted.
+                  textFormat: Text.PlainText
                   text: layoutRow.layout ? Model.summarizeLayout(layoutRow.layout) : ""
                   color: card.faint
                   font.family: Style.font.family
@@ -260,6 +266,9 @@ Item {
           }
 
           Text {
+            // Widget names come from other people's plugin manifests, which
+            // this plugin only truncates. Rendered literally, not interpreted.
+            textFormat: Text.PlainText
             anchors.verticalCenter: parent.verticalCenter
             width: parent.width - removeRule.width - Style.space(60)
             wrapMode: Text.Wrap
@@ -287,6 +296,9 @@ Item {
         spacing: Style.space(8)
 
         Text {
+          // Widget names come from other people's plugin manifests, which
+          // this plugin only truncates. Rendered literally, not interpreted.
+          textFormat: Text.PlainText
           text: "New rule"
           color: card.ink
           font.family: Style.font.family
@@ -326,6 +338,9 @@ Item {
           }
 
           Text {
+            // Widget names come from other people's plugin manifests, which
+            // this plugin only truncates. Rendered literally, not interpreted.
+            textFormat: Text.PlainText
             anchors.verticalCenter: parent.verticalCenter
             text: "While a window is fullscreen"
             color: card.ink

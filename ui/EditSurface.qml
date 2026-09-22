@@ -219,6 +219,9 @@ Item {
         }
 
         Text {
+          // Widget names come from other people's plugin manifests, which
+          // this plugin only truncates. Rendered literally, not interpreted.
+          textFormat: Text.PlainText
           anchors.centerIn: parent
           visible: !surface.vertical
           text: modelData
@@ -326,6 +329,9 @@ Item {
                                                          : surface.dragging.sy + Style.space(14)) : 0
 
     Text {
+      // Widget names come from other people's plugin manifests, which
+      // this plugin only truncates. Rendered literally, not interpreted.
+      textFormat: Text.PlainText
       id: ghostLabel
       anchors.centerIn: parent
       text: surface.dragChip ? surface.barber.widgetName(surface.dragChip.id) : ""
@@ -373,6 +379,9 @@ Item {
         spacing: Style.space(4)
 
         Text {
+          // Widget names come from other people's plugin manifests, which
+          // this plugin only truncates. Rendered literally, not interpreted.
+          textFormat: Text.PlainText
           anchors.verticalCenter: parent.verticalCenter
           rightPadding: Style.space(6)
           leftPadding: Style.space(4)
@@ -413,6 +422,9 @@ Item {
       }
 
       Text {
+        // Widget names come from other people's plugin manifests, which
+        // this plugin only truncates. Rendered literally, not interpreted.
+        textFormat: Text.PlainText
         visible: chipTools.confirming
         width: parent.width
         wrapMode: Text.Wrap
@@ -450,6 +462,9 @@ Item {
         spacing: Style.space(4)
 
         Text {
+          // Widget names come from other people's plugin manifests, which
+          // this plugin only truncates. Rendered literally, not interpreted.
+          textFormat: Text.PlainText
           anchors.verticalCenter: parent.verticalCenter
           rightPadding: Style.space(10)
           text: surface.glyphs.edit + "  Barber"
@@ -519,6 +534,9 @@ Item {
       }
 
       Text {
+        // Widget names come from other people's plugin manifests, which
+        // this plugin only truncates. Rendered literally, not interpreted.
+        textFormat: Text.PlainText
         width: toolbarRow.implicitWidth
         wrapMode: Text.Wrap
         horizontalAlignment: Text.AlignHCenter

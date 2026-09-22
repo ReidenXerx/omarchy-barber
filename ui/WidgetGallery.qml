@@ -36,6 +36,9 @@ Item {
     spacing: Style.space(6)
 
     Text {
+      // Widget names come from other people's plugin manifests, which
+      // this plugin only truncates. Rendered literally, not interpreted.
+      textFormat: Text.PlainText
       text: "Add a widget"
       color: gallery.ink
       font.family: Style.font.family
@@ -44,6 +47,9 @@ Item {
     }
 
     Text {
+      // Widget names come from other people's plugin manifests, which
+      // this plugin only truncates. Rendered literally, not interpreted.
+      textFormat: Text.PlainText
       width: parent.width
       wrapMode: Text.Wrap
       text: gallery.selected && gallery.service
@@ -93,6 +99,9 @@ Item {
         spacing: Style.space(2)
 
         Text {
+          // Widget names come from other people's plugin manifests, which
+          // this plugin only truncates. Rendered literally, not interpreted.
+          textFormat: Text.PlainText
           width: parent.width
           elide: Text.ElideRight
           text: row.item ? row.item.name : ""
@@ -103,6 +112,9 @@ Item {
         }
 
         Text {
+          // Widget names come from other people's plugin manifests, which
+          // this plugin only truncates. Rendered literally, not interpreted.
+          textFormat: Text.PlainText
           width: parent.width
           elide: Text.ElideRight
           text: row.item
@@ -115,6 +127,9 @@ Item {
         }
 
         Text {
+          // Widget names come from other people's plugin manifests, which
+          // this plugin only truncates. Rendered literally, not interpreted.
+          textFormat: Text.PlainText
           visible: text !== ""
           width: parent.width
           wrapMode: Text.Wrap
@@ -139,6 +154,9 @@ Item {
   }
 
   Text {
+    // Widget names come from other people's plugin manifests, which
+    // this plugin only truncates. Rendered literally, not interpreted.
+    textFormat: Text.PlainText
     id: empty
     visible: gallery.items.length === 0
     anchors { top: header.bottom; topMargin: Style.space(10); left: parent.left; right: parent.right }

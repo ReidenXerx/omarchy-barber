@@ -24,6 +24,9 @@ Item {
     spacing: Style.space(10)
 
     Text {
+      // Widget names come from other people's plugin manifests, which
+      // this plugin only truncates. Rendered literally, not interpreted.
+      textFormat: Text.PlainText
       text: "The bar"
       color: card.ink
       font.family: Style.font.family
@@ -49,6 +52,9 @@ Item {
       }
 
       Text {
+        // Widget names come from other people's plugin manifests, which
+        // this plugin only truncates. Rendered literally, not interpreted.
+        textFormat: Text.PlainText
         anchors.verticalCenter: parent.verticalCenter
         text: "See-through"
         color: card.ink
@@ -72,6 +78,9 @@ Item {
     }
 
     Text {
+      // Widget names come from other people's plugin manifests, which
+      // this plugin only truncates. Rendered literally, not interpreted.
+      textFormat: Text.PlainText
       width: parent.width
       wrapMode: Text.Wrap
       readonly property string bindState: card.service ? card.service.shortcutState : ""
