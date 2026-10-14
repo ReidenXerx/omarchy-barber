@@ -48,7 +48,10 @@ Item {
   }
 
   // Inline components do not see this file's ids, so they take the theme directly.
+  // Both are plain text: a Caption shows a window's class and a layout's name, which come
+  // from outside the plugin and must never be read as markup.
   component Caption: Text {
+    textFormat: Text.PlainText
     width: parent ? parent.width : implicitWidth
     wrapMode: Text.Wrap
     color: Qt.rgba(Commons.Color.menu.text.r, Commons.Color.menu.text.g, Commons.Color.menu.text.b, 0.6)
@@ -57,6 +60,7 @@ Item {
   }
 
   component Heading: Text {
+    textFormat: Text.PlainText
     color: Commons.Color.menu.text
     font.family: Style.font.family
     font.pixelSize: Style.font.title
