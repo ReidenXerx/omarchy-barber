@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "../BarberModel.js" as Model
 
@@ -15,8 +16,8 @@ Item {
   readonly property var meta: service && chip ? service.widgetMeta(chip.id) : ({})
   readonly property var fields: chip ? Model.formFieldsFor(meta, chip.options, vertical) : []
   readonly property bool reading: !!(service && chip && service.manifestAsked[chip.id] && service.manifests[chip.id] === undefined)
-  readonly property color ink: Color.menu.text
-  readonly property color accent: Color.accent
+  readonly property color ink: Commons.Color.menu.text
+  readonly property color accent: Commons.Color.accent
   readonly property color faint: Qt.rgba(ink.r, ink.g, ink.b, 0.6)
 
   implicitHeight: content.implicitHeight

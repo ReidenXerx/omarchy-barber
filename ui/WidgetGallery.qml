@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "../BarberModel.js" as Model
 
@@ -15,8 +16,8 @@ Item {
   property string query: ""
   property int current: 0
   readonly property var items: service ? Model.gallery(service.plugins, service.catalog, query) : []
-  readonly property color ink: Color.menu.text
-  readonly property color accent: Color.accent
+  readonly property color ink: Commons.Color.menu.text
+  readonly property color accent: Commons.Color.accent
   readonly property color faint: Qt.rgba(ink.r, ink.g, ink.b, 0.6)
 
   implicitHeight: header.implicitHeight + Style.space(8) + (items.length > 0 ? Math.min(list.contentHeight, Style.space(420)) : empty.implicitHeight)
@@ -91,7 +92,7 @@ Item {
       width: list.width
       height: rowColumn.implicitHeight + Style.space(12)
       radius: Style.cornerRadius
-      color: current ? Color.menu.selectedBackground : "transparent"
+      color: current ? Commons.Color.menu.selectedBackground : "transparent"
 
       Column {
         id: rowColumn
@@ -105,7 +106,7 @@ Item {
           width: parent.width
           elide: Text.ElideRight
           text: row.item ? row.item.name : ""
-          color: row.current ? Color.menu.selectedText : gallery.ink
+          color: row.current ? Commons.Color.menu.selectedText : gallery.ink
           font.family: Style.font.family
           font.pixelSize: Style.font.body
           font.bold: true

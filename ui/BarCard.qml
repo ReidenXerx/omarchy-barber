@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "../BarberModel.js" as Model
 
@@ -11,9 +12,9 @@ Item {
 
   readonly property var bar: service ? service.bar : Model.readBar(null)
   readonly property string shortcut: service ? service.settings.shortcut : ""
-  readonly property color ink: Color.menu.text
-  readonly property color accent: Color.accent
-  readonly property color urgent: Color.urgent
+  readonly property color ink: Commons.Color.menu.text
+  readonly property color accent: Commons.Color.accent
+  readonly property color urgent: Commons.Color.urgent
   readonly property color faint: Qt.rgba(ink.r, ink.g, ink.b, 0.6)
 
   implicitHeight: content.implicitHeight

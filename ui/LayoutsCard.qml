@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "../BarberModel.js" as Model
 
@@ -11,9 +12,9 @@ Item {
 
   readonly property var settings: service ? service.settings : Model.readSettings(null)
   readonly property var layoutNames: settings.layouts.map(function (l) { return l.name })
-  readonly property color ink: Color.menu.text
-  readonly property color accent: Color.accent
-  readonly property color urgent: Color.urgent
+  readonly property color ink: Commons.Color.menu.text
+  readonly property color accent: Commons.Color.accent
+  readonly property color urgent: Commons.Color.urgent
   readonly property color faint: Qt.rgba(ink.r, ink.g, ink.b, 0.6)
 
   property string deleting: ""
@@ -50,13 +51,13 @@ Item {
   component Caption: Text {
     width: parent ? parent.width : implicitWidth
     wrapMode: Text.Wrap
-    color: Qt.rgba(Color.menu.text.r, Color.menu.text.g, Color.menu.text.b, 0.6)
+    color: Qt.rgba(Commons.Color.menu.text.r, Commons.Color.menu.text.g, Commons.Color.menu.text.b, 0.6)
     font.family: Style.font.family
     font.pixelSize: Style.font.caption
   }
 
   component Heading: Text {
-    color: Color.menu.text
+    color: Commons.Color.menu.text
     font.family: Style.font.family
     font.pixelSize: Style.font.title
     font.bold: true

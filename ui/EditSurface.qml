@@ -1,6 +1,7 @@
 import Quickshell
 import QtQuick
 import qs.Commons
+import qs.Commons as Commons
 import qs.Ui
 import "."
 import "../BarberModel.js" as Model
@@ -38,12 +39,12 @@ Item {
   readonly property real markerAlong: dragChip && dropAt ? Model.dropMarker(bar, chipList, dragChip, dropAt, barLength) : 0
   readonly property int hiddenCount: chipList.filter(function (c) { return !c.shown }).length
 
-  readonly property color ink: Color.menu.text
-  readonly property color paper: Qt.rgba(Color.menu.background.r, Color.menu.background.g, Color.menu.background.b, 1)
-  readonly property color accent: Color.accent
-  readonly property color urgent: Color.urgent
+  readonly property color ink: Commons.Color.menu.text
+  readonly property color paper: Qt.rgba(Commons.Color.menu.background.r, Commons.Color.menu.background.g, Commons.Color.menu.background.b, 1)
+  readonly property color accent: Commons.Color.accent
+  readonly property color urgent: Commons.Color.urgent
   readonly property color faint: Qt.rgba(ink.r, ink.g, ink.b, 0.6)
-  readonly property var cardBorder: Border.surfaceSpec("menu", "border", Color.menu.border, Math.max(1, Style.space(2)))
+  readonly property var cardBorder: Border.surfaceSpec("menu", "border", Commons.Color.menu.border, Math.max(1, Style.space(2)))
   readonly property string fontFamily: Style.font.family
   readonly property real gap: Style.space(10)
   readonly property real pad: Style.spacing.popupPadding
@@ -166,7 +167,7 @@ Item {
     y: surface.position === "top" ? surface.barSize : 0
     width: surface.vertical ? surface.width - surface.barSize : surface.width
     height: surface.vertical ? surface.height : surface.height - surface.barSize
-    color: surface.alpha(Color.menu.scrim, Math.min(Color.menu.scrim.a, 0.45))
+    color: surface.alpha(Commons.Color.menu.scrim, Math.min(Commons.Color.menu.scrim.a, 0.45))
 
     MouseArea {
       anchors.fill: parent
