@@ -70,10 +70,12 @@ function entryOptions(entry) {
 
 // The bar as Barber works on it. Entries keep their places in shell.json's arrays even when their ids are not ones it
 // can act on, because the shell's IPC addresses widgets by those places.
-function readBar(config) {
+// `splitShell` says the running shell is the one with the center box: then the bar is read in that shape even when
+// shell.json still has only the three classic keys (the shell adds the others on its first change).
+function readBar(config, splitShell) {
   var bar = isObject(config) && isObject(config.bar) ? config.bar : {}
   var layout = isObject(bar.layout) ? bar.layout : {}
-  var names = isSplit(layout) ? SPLIT : CLASSIC
+  var names = splitShell === true || isSplit(layout) ? SPLIT : CLASSIC
   var sections = {}
   for (var s = 0; s < names.length; s++) {
     sections[names[s]] = toList(layout[names[s]]).slice(0, ENTRIES_MAX).map(function (entry) {

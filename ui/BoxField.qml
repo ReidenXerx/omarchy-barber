@@ -31,11 +31,13 @@ FocusScope {
     radius: Style.cornerRadius
   }
 
+  // Anywhere on the box, its border and padding included, puts the caret in it.
   MouseArea {
     id: hover
     anchors.fill: parent
     hoverEnabled: true
-    acceptedButtons: Qt.NoButton
+    cursorShape: Qt.IBeamCursor
+    onClicked: field.forceActiveFocus()
   }
 
   KeyField {

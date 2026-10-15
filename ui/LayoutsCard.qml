@@ -361,6 +361,7 @@ Item {
 
           BoxField {
             id: appField
+            maximumLength: 80
             width: parent.width - addButton.width - parent.spacing
             placeholderText: "In an app: part of its name or title, e.g. zed"
             foreground: card.ink

@@ -200,13 +200,30 @@ Item {
 
   // ---------------------------------------------------------------- reading the bar back
 
+  // Which bar the running shell has, from the layout Omarchy ships: one with centerBegin is the center-box bar, even
+  // when this user's shell.json has not been given those keys yet.
+  property bool splitShell: false
+
+  FileView {
+    path: "/usr/share/omarchy/config/omarchy/shell.json"
+    printErrors: false
+    onLoaded: {
+      var raw = text()
+      if (raw.length > 1024 * 1024) return
+      var parsed = Model.parseOutput(raw)
+      var layout = parsed && parsed.bar && parsed.bar.layout ? parsed.bar.layout : null
+      barber.splitShell = layout !== null && typeof layout === "object" && Object.prototype.hasOwnProperty.call(layout, "centerBegin")
+      if (barber.loaded) barber.refreshConfig(null)
+    }
+  }
+
   function refreshConfig(then) {
     enqueue(Model.argv(Model.call("listShellConfig"), barber.tools), 5000, function (code, out) {
       var parsed = code === 0 ? Model.parseOutput(out) : null
       var ok = parsed !== null && typeof parsed === "object" && !(parsed instanceof Array)
       if (ok) {
         var entry = Model.ownEntry(parsed, barber.pluginId)
-        barber.bar = Model.readBar(parsed)
+        barber.bar = Model.readBar(parsed, barber.splitShell)
         barber.settings = Model.readSettings(entry)
         barber.hasEntry = entry !== null
         barber.loaded = true

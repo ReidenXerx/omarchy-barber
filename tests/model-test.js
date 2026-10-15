@@ -691,5 +691,18 @@ test("a layout saved before the box keeps its center whole in it; one saved with
   eq(M.snapshot(M.readBar(again), "New"), splitLayout)
 })
 
+test("on the center-box shell a classic shell.json is read, planned and worn as the center-box bar", () => {
+  const config = fixture()
+  const bar = M.readBar(config, true)
+  eq(Object.keys(bar.sections), ["left", "centerBegin", "center", "centerEnd", "right", "tray"])
+  eq(bar.sections.center.map((e) => e.id), ["omarchy.indicators", "omarchy.clock", "omarchy.weather"])
+  eq(M.addPlace(bar, null, { defaultSection: "center" }).section, "centerEnd", "beside the clock, as the shell puts it")
+  const layout = M.snapshot(M.readBar(splitFixture()), "New")
+  for (const s of ["centerBegin", "centerEnd", "tray"]) config.bar.layout[s] = []     // what the shell adds on first change
+  simulate(config, M.planLayout(bar, layout))
+  assert(M.wears(M.readBar(config, true), layout), "the bar wears the layout afterwards")
+  eq(Object.keys(M.readBar(fixture(), false).sections), ["left", "center", "right"], "an older shell keeps three")
+})
+
 console.log(passed + " passed, " + failed + " failed")
 process.exit(failed ? 1 : 0)
