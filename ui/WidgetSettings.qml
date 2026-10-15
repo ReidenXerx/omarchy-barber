@@ -219,7 +219,7 @@ Item {
 
           Component {
             id: textField
-            TextField {
+            BoxField {
               text: Model.shownText(row.field, row.field.value)
               placeholderText: Model.shownText(row.field, row.field.fallback)
               foreground: form.ink

@@ -61,16 +61,21 @@ Item {
       font.pixelSize: Style.font.caption
     }
 
-    TextField {
+    BoxField {
       id: search
       width: parent.width
       placeholderText: "Search by name, kind or id"
+      maximumLength: 80
       foreground: gallery.ink
       accent: gallery.accent
       onTextChanged: gallery.query = text
       onAccepted: gallery.pick(gallery.items[gallery.current])
-      Keys.onDownPressed: gallery.current = Math.min(gallery.items.length - 1, gallery.current + 1)
-      Keys.onUpPressed: gallery.current = Math.max(0, gallery.current - 1)
+      keyFilter: function (event) {
+        if (event.key === Qt.Key_Down) gallery.current = Math.min(gallery.items.length - 1, gallery.current + 1)
+        else if (event.key === Qt.Key_Up) gallery.current = Math.max(0, gallery.current - 1)
+        else return
+        event.accepted = true
+      }
     }
   }
 

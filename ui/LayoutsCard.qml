@@ -85,9 +85,10 @@ Item {
         width: parent.width
         spacing: Style.space(6)
 
-        TextField {
+        BoxField {
           id: nameField
           width: parent.width - saveButton.width - parent.spacing
+          maximumLength: 40
           placeholderText: "Name this bar, e.g. Docked"
           foreground: card.ink
           accent: card.accent
@@ -358,7 +359,7 @@ Item {
           width: parent.width
           spacing: Style.space(6)
 
-          TextField {
+          BoxField {
             id: appField
             width: parent.width - addButton.width - parent.spacing
             placeholderText: "In an app: part of its name or title, e.g. zed"
