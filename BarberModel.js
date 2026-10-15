@@ -5,7 +5,14 @@
 // pick a layout for the moment. Everything read from shell.json or the shell's IPC is untrusted: shapes are checked
 // and sizes are bounded before anything is built from them.
 
-var SECTIONS = ["left", "center", "right"]
+// The bar's sections in the order they run along it. Omarchy's bar has had two shapes: left, center and right, and
+// since 4.1 a center box with centerBegin and centerEnd hanging off its edges, plus tray, the widgets drawn inside the
+// tray's drawer. Each bar is read in the shape its shell.json has, and a saved layout is fitted to that shape.
+var SECTIONS = ["left", "centerBegin", "center", "centerEnd", "right", "tray"]
+var CLASSIC = ["left", "center", "right"]
+var SPLIT = ["left", "centerBegin", "center", "centerEnd", "right", "tray"]
+var SECTION_LABELS = { left: "left", centerBegin: "before center", center: "center", centerEnd: "after center",
+                       right: "right", tray: "tray drawer" }
 var POSITIONS = ["top", "bottom", "left", "right"]
 var ENTRIES_MAX = 64          // widgets in one section
 var OPTIONS_MAX = 32          // options on one widget
@@ -66,9 +73,10 @@ function entryOptions(entry) {
 function readBar(config) {
   var bar = isObject(config) && isObject(config.bar) ? config.bar : {}
   var layout = isObject(bar.layout) ? bar.layout : {}
+  var names = isSplit(layout) ? SPLIT : CLASSIC
   var sections = {}
-  for (var s = 0; s < SECTIONS.length; s++) {
-    sections[SECTIONS[s]] = toList(layout[SECTIONS[s]]).slice(0, ENTRIES_MAX).map(function (entry) {
+  for (var s = 0; s < names.length; s++) {
+    sections[names[s]] = toList(layout[names[s]]).slice(0, ENTRIES_MAX).map(function (entry) {
       return { id: entryId(entry), options: entryOptions(entry) }
     })
   }
@@ -77,6 +85,29 @@ function readBar(config) {
     transparent: bar.transparent === true,
     sections: sections
   }
+}
+
+// Whether a layout (shell.json's, or the sections of a saved one) has the center box's shape.
+function isSplit(sections) {
+  return has(sections, "centerBegin") || has(sections, "centerEnd") || has(sections, "tray")
+}
+
+// The sections a bar has, in order along it.
+function sectionsOf(bar) {
+  return isObject(bar) && isSplit(bar.sections) ? SPLIT : CLASSIC
+}
+
+function hasSection(bar, section) {
+  return sectionsOf(bar).indexOf(section) >= 0
+}
+
+// The sections a widget can be dragged or nudged into: the tray's drawer is not drawn on the bar.
+function laneOf(bar) {
+  return sectionsOf(bar).filter(function (s) { return s !== "tray" })
+}
+
+function sectionLabel(section) {
+  return SECTION_LABELS[section] || ""
 }
 
 // Barber's own entry in shell.json's plugin list, where its settings are kept.
@@ -135,9 +166,10 @@ function chips(geometry, bar) {
     return isObject(g) && validId(g.id) && SECTIONS.indexOf(g.section) >= 0
   })
   var along = isVertical(bar) ? "y" : "x"
+  var names = sectionsOf(bar)
   var out = []
-  for (var s = 0; s < SECTIONS.length; s++) {
-    var section = SECTIONS[s]
+  for (var s = 0; s < names.length; s++) {
+    var section = names[s]
     var entries = bar.sections[section]
     var wanted = {}
     entries.forEach(function (e) { if (validId(e.id)) wanted[e.id] = (wanted[e.id] || 0) + 1 })
@@ -166,7 +198,7 @@ function chips(geometry, bar) {
   return out
 }
 
-// The widgets in the order you meet them along the bar: left, center, right, each in its own order.
+// The widgets in the order you meet them along the bar, section by section, each in its own order.
 function barOrder(chipList) {
   return toList(chipList).slice().sort(function (a, b) {
     var sa = SECTIONS.indexOf(a.section), sb = SECTIONS.indexOf(b.section)
@@ -217,33 +249,70 @@ function chipOfInstance(chipList, id, n) {
 
 // One place earlier or later along the bar: within the section, or over into the next section's near end.
 function nudgeTarget(bar, chip, delta) {
-  var s = SECTIONS.indexOf(chip.section)
-  var length = bar.sections[chip.section].length
+  var lane = laneOf(bar)
+  var s = lane.indexOf(chip.section)
+  var length = toList(bar.sections[chip.section]).length
   if (delta < 0) {
     if (chip.index > 0) return { section: chip.section, index: chip.index - 1 }
-    return s > 0 ? { section: SECTIONS[s - 1], index: bar.sections[SECTIONS[s - 1]].length } : null
+    return s > 0 ? { section: lane[s - 1], index: bar.sections[lane[s - 1]].length } : null
   }
   if (chip.index < length - 1) return { section: chip.section, index: chip.index + 1 }
-  return s < SECTIONS.length - 1 ? { section: SECTIONS[s + 1], index: 0 } : null
+  return s >= 0 && s < lane.length - 1 ? { section: lane[s + 1], index: 0 } : null
 }
 
 var DROP_NEAR = 48            // pixels from a widget's middle that count as dropping beside it
 
+// The stretches of the bar a drop lands in when it is near no widget, in order along it: thirds for left, center and
+// right, and on a bar with the center box, the middle third split at the box's edges. The box is where the center
+// section's shown widgets are drawn (the dragged one aside), or a point in the middle of the bar when there are none.
+function dropZones(bar, chipList, dragged, barLength) {
+  var length = Math.max(1, num(barLength))
+  var third = length / 3
+  if (!isSplit(bar.sections))
+    return CLASSIC.map(function (s, i) { return { section: s, start: third * i, length: third } })
+  var along = isVertical(bar) ? "y" : "x"
+  var size = along === "x" ? "width" : "height"
+  var boxStart = length / 2
+  var boxEnd = length / 2
+  var first = true
+  toList(chipList).forEach(function (c) {
+    if (!c.shown || c.section !== "center" || (dragged && c.key === dragged.key)) return
+    boxStart = first ? c[along] : Math.min(boxStart, c[along])
+    boxEnd = first ? c[along] + c[size] : Math.max(boxEnd, c[along] + c[size])
+    first = false
+  })
+  // An empty box still gets room to be dropped into, and the box never reaches past the middle third.
+  var reach = Math.min(third / 3, 48)
+  if (boxEnd - boxStart < reach) {
+    var middle = (boxStart + boxEnd) / 2
+    boxStart = middle - reach / 2
+    boxEnd = middle + reach / 2
+  }
+  boxStart = Math.max(third, Math.min(boxStart, third * 2))
+  boxEnd = Math.max(boxStart, Math.min(boxEnd, third * 2))
+  return [{ section: "left", start: 0, length: third },
+          { section: "centerBegin", start: third, length: boxStart - third },
+          { section: "center", start: boxStart, length: boxEnd - boxStart },
+          { section: "centerEnd", start: boxEnd, length: third * 2 - boxEnd },
+          { section: "right", start: third * 2, length: third }]
+}
+
 // Where a widget dragged to `point` lands: beside the nearest shown widget when the point is close to one, before or
-// after it by which side of its middle the point is on; otherwise in the third of the bar the point is over (the
+// after it by which side of its middle the point is on; otherwise in the stretch of the bar the point is over (the
 // nearest widget in that section, or the section itself when it is empty). The index is the one the shell wants:
 // counted after the dragged widget has been taken out of its section.
 function dropTarget(bar, chipList, dragged, point, barLength) {
   var along = isVertical(bar) ? "y" : "x"
   var size = along === "x" ? "width" : "height"
   var at = num(point[along])
-  var third = Math.max(1, num(barLength)) / 3
-  var zone = SECTIONS[Math.max(0, Math.min(2, Math.floor(at / third)))]
+  var zones = dropZones(bar, chipList, dragged, barLength)
+  var zone = zones[0].section
+  zones.forEach(function (z) { if (at >= z.start && z.length > 0) zone = z.section })
 
   function nearest(section) {
     var best = null
     toList(chipList).forEach(function (c) {
-      if (!c.shown || c.key === dragged.key || (section && c.section !== section)) return
+      if (!c.shown || c.key === dragged.key || c.section === "tray" || (section && c.section !== section)) return
       var middle = c[along] + c[size] / 2
       var distance = Math.abs(at - middle)
       if (!best || distance < best.distance) best = { chip: c, distance: distance, after: at > middle }
@@ -254,13 +323,14 @@ function dropTarget(bar, chipList, dragged, point, barLength) {
   var close = nearest("")
   var pick = close && close.distance <= DROP_NEAR ? close : nearest(zone)
   var target = pick ? { section: pick.chip.section, index: pick.chip.index + (pick.after ? 1 : 0) }
-                    : { section: zone, index: zone === "left" ? 0 : bar.sections[zone].length }
+                    : { section: zone, index: zone === "left" || zone === "centerEnd" ? 0 : bar.sections[zone].length }
   if (target.section === dragged.section && target.index > dragged.index) target.index--
   return target
 }
 
 // Where along the bar the marker for a drop at `target` goes: the start of the widget that will follow the dropped
-// one, the end of the one it will follow, or the middle of an empty section's third of the bar.
+// one, the end of the one it will follow, or for an empty section, the middle of its stretch of the bar (the box's
+// edge for the sections that hang off it).
 function dropMarker(bar, chipList, dragged, target, barLength) {
   var along = isVertical(bar) ? "y" : "x"
   var size = along === "x" ? "width" : "height"
@@ -275,7 +345,15 @@ function dropMarker(bar, chipList, dragged, target, barLength) {
   })
   if (after) return after[along]
   if (before) return before[along] + before[size]
-  return Math.max(1, num(barLength)) / 3 * (SECTIONS.indexOf(target.section) + 0.5)
+  var zones = dropZones(bar, chipList, dragged, barLength)
+  for (var i = 0; i < zones.length; i++) {
+    var z = zones[i]
+    if (z.section !== target.section) continue
+    if (z.section === "centerBegin") return z.start + z.length
+    if (z.section === "centerEnd") return z.start
+    return z.start + z.length / 2
+  }
+  return Math.max(1, num(barLength)) / 2
 }
 
 // ---------------------------------------------------------------- calls, and the calls that take them back
@@ -309,7 +387,7 @@ function change(label, run, undo) {
 }
 
 function moveChange(bar, chip, target) {
-  if (!target || SECTIONS.indexOf(target.section) < 0) return null
+  if (!target || !hasSection(bar, target.section) || !hasSection(bar, chip.section)) return null
   var room = bar.sections[target.section].length - (target.section === chip.section ? 1 : 0)
   var index = Math.max(0, Math.min(Math.floor(num(target.index)), room))
   if (target.section === chip.section && index === chip.index) return null
@@ -330,17 +408,22 @@ function removeChange(chip) {
 }
 
 function addChange(bar, id, section, index) {
-  if (!validId(id) || SECTIONS.indexOf(section) < 0 || count(bar.sections, id) > 0) return null
+  if (!validId(id) || !hasSection(bar, section) || count(bar.sections, id) > 0) return null
   var length = bar.sections[section].length
   var at = index === undefined || index === null ? length : Math.max(0, Math.min(Math.floor(num(index)), length))
   return change("Add", [call("enablePlugin", id, json({ section: section, index: at }))],
                 [call("setPluginEnabled", id, "false")])
 }
 
-// Where a widget picked in the gallery goes: after the widget chosen on the bar, or at the end of its own side.
+// Where a widget picked in the gallery goes: after the widget chosen on the bar, or at the end of its own side. On a
+// bar with the center box, a manifest's "center" means beside the clock, as the shell reads it: in centerEnd, since in
+// the box it would push the clock off center.
 function addPlace(bar, chip, meta) {
-  if (chip && SECTIONS.indexOf(chip.section) >= 0) return { section: chip.section, index: chip.index + 1 }
-  var section = isObject(meta) && SECTIONS.indexOf(meta.defaultSection) >= 0 ? meta.defaultSection : "center"
+  if (chip && hasSection(bar, chip.section)) return { section: chip.section, index: chip.index + 1 }
+  var wanted = isObject(meta) && typeof meta.defaultSection === "string" ? meta.defaultSection : ""
+  var section
+  if (isSplit(bar.sections)) section = SPLIT.indexOf(wanted) >= 0 && wanted !== "center" ? wanted : "centerEnd"
+  else section = CLASSIC.indexOf(wanted) >= 0 ? wanted : "center"
   return { section: section, index: bar.sections[section].length }
 }
 
@@ -413,10 +496,11 @@ function stopsPlugin(plugin) {
 
 // A layout as Barber keeps it: each section's widgets with their options, and how the bar sits.
 function snapshot(bar, name) {
+  var names = sectionsOf(bar)
   var sections = {}
-  for (var s = 0; s < SECTIONS.length; s++)
-    sections[SECTIONS[s]] = bar.sections[SECTIONS[s]].filter(function (e) { return validId(e.id) })
-                                                     .map(function (e) { return { id: e.id, options: copy(e.options) } })
+  for (var s = 0; s < names.length; s++)
+    sections[names[s]] = bar.sections[names[s]].filter(function (e) { return validId(e.id) })
+                                               .map(function (e) { return { id: e.id, options: copy(e.options) } })
   return { name: text(name, NAME_MAX), position: bar.position, transparent: bar.transparent, sections: sections }
 }
 
@@ -425,10 +509,11 @@ function snapshot(bar, name) {
 // out, a widget the bar holds more than once is left where it is, and a widget `keep` names is never taken off (its
 // plugin would stop with it).
 function planLayout(bar, layout, installed, keep) {
+  var names = sectionsOf(bar)
   var work = {}
-  for (var s = 0; s < SECTIONS.length; s++)
-    work[SECTIONS[s]] = bar.sections[SECTIONS[s]].map(function (e) { return { id: e.id, options: copy(e.options) } })
-  var target = readLayout(layout)
+  for (var s = 0; s < names.length; s++)
+    work[names[s]] = bar.sections[names[s]].map(function (e) { return { id: e.id, options: copy(e.options) } })
+  var target = fitLayout(readLayout(layout), bar)
   if (!target) return []
   var isInstalled = typeof installed === "function" ? installed : function () { return true }
   var mustStay = typeof keep === "function" ? keep : function () { return false }
@@ -437,7 +522,7 @@ function planLayout(bar, layout, installed, keep) {
   function wanted(id) { return validId(id) && count(target.sections, id) === 1 && isInstalled(id) }
 
   // What the layout does not have comes off.
-  SECTIONS.forEach(function (section) {
+  names.forEach(function (section) {
     for (var i = work[section].length - 1; i >= 0; i--) {
       var id = work[section][i].id
       if (!validId(id) || count(target.sections, id) > 0 || count(work, id) !== 1 || mustStay(id)) continue
@@ -446,7 +531,7 @@ function planLayout(bar, layout, installed, keep) {
     }
   })
   // What the bar does not have goes on, where the layout has it.
-  SECTIONS.forEach(function (section) {
+  names.forEach(function (section) {
     target.sections[section].forEach(function (e, i) {
       if (!wanted(e.id) || count(work, e.id) > 0) return
       var at = Math.min(i, work[section].length)
@@ -458,7 +543,7 @@ function planLayout(bar, layout, installed, keep) {
   // instance at a time: the instances already put in place come first along the bar, so the next one to place is
   // always the first of its id not yet placed.
   var placed = {}
-  SECTIONS.forEach(function (section) {
+  names.forEach(function (section) {
     var position = 0
     target.sections[section].forEach(function (e) {
       if (!validId(e.id) || !isInstalled(e.id)) return
@@ -488,17 +573,32 @@ function planLayout(bar, layout, installed, keep) {
   return calls
 }
 
-// A stored layout, checked: null when it is not one.
+// A stored layout, checked: null when it is not one. It keeps the shape it was saved in.
 function readLayout(raw) {
   if (!isObject(raw) || !isObject(raw.sections)) return null
+  var names = isSplit(raw.sections) ? SPLIT : CLASSIC
   var sections = {}
-  for (var s = 0; s < SECTIONS.length; s++) {
-    sections[SECTIONS[s]] = toList(raw.sections[SECTIONS[s]]).slice(0, ENTRIES_MAX).filter(function (e) {
+  for (var s = 0; s < names.length; s++) {
+    sections[names[s]] = toList(raw.sections[names[s]]).slice(0, ENTRIES_MAX).filter(function (e) {
       return isObject(e) && validId(e.id)
     }).map(function (e) { return { id: e.id, options: entryOptions(isObject(e.options) ? e.options : {}) } })
   }
   return { name: text(raw.name, NAME_MAX), position: POSITIONS.indexOf(raw.position) >= 0 ? raw.position : "top",
            transparent: raw.transparent === true, sections: sections }
+}
+
+// A layout in the shape of the bar it goes on. One saved before the center box keeps its center whole in the box, as
+// Omarchy's own migration did with a center that had no anchor; one saved with the box, put on a bar without it, runs
+// its three middle sections together as the center, and its tray drawer's widgets go at the end of the right.
+function fitLayout(layout, bar) {
+  if (!layout) return null
+  var split = isSplit(bar.sections)
+  if (split === isSplit(layout.sections)) return layout
+  var from = layout.sections
+  var sections = split
+    ? { left: from.left, centerBegin: [], center: from.center, centerEnd: [], right: from.right, tray: [] }
+    : { left: from.left, center: from.centerBegin.concat(from.center, from.centerEnd), right: from.right.concat(from.tray) }
+  return { name: layout.name, position: layout.position, transparent: layout.transparent, sections: sections }
 }
 
 // Whether the bar already wears the layout: the same widgets in the same places, with its options set.

@@ -16,7 +16,7 @@ vm.runInNewContext(source + "\nthis.M = { SECTIONS, readBar, chips, barOrder, st
   "dropMarker, addPlace, barSignature, stopsPlugin, pluginById, widgetInstalled, summarizeLayout, describeContext, " +
   "hasExternalScreen, settingsPayload, withRule, withoutRule, withRuleEnabled, manifestPathAllowed, readWidgetManifest, " +
   "formFieldsFor, shownText, typedText, comboParts, bindState, unbindStatement, SHORTCUTS, argv, callSucceeded, " +
-  "parseOutput, ownEntry, chipInstance, chipOfInstance }", box)
+  "parseOutput, ownEntry, chipInstance, chipOfInstance, dropZones, sectionLabel, fitLayout }", box)
 const M = box.M
 
 let passed = 0
@@ -40,7 +40,7 @@ function simulate(config, calls) {
   const bar = config.bar
   const L = bar.layout
   const idOf = (e) => (typeof e === "string" ? e : e.id)
-  const all = ["left", "center", "right"]
+  const all = ["left", "centerBegin", "center", "centerEnd", "right", "tray"].filter((s) => Array.isArray(L[s]))
   function find(id, section) {
     for (const s of section ? [section] : all) {
       const i = L[s].findIndex((e) => idOf(e) === id)
@@ -564,6 +564,131 @@ test("what the rules see, in words, and a layout in a line", () => {
      "On battery · laptop screen alone · fullscreen · kitty")
   eq(M.describeContext({}), "Plugged in · laptop screen alone")
   eq(M.summarizeLayout(M.snapshot(M.readBar(fixture()), "Now")), "11 widgets · top")
+})
+
+// ---------------------------------------------------------------- the bar with the center box (Omarchy 4.1)
+
+// The bar as Omarchy's migration leaves it: the old center split at its anchor, the clock alone in the box.
+function splitFixture() {
+  return {
+    version: 1,
+    bar: {
+      position: "top",
+      transparent: false,
+      layout: {
+        left: [{ id: "omarchy.menu" }, { id: "omarchy.workspaces" }],
+        centerBegin: [{ id: "omarchy.indicators", items: ["Dnd"] }],
+        center: [{ id: "omarchy.clock", format: "HH:mm" }],
+        centerEnd: [{ id: "omarchy.weather" }, { id: "omarchy.system-update" }],
+        right: [{ id: "omarchy.tray" }, { id: "omarchy.audio" }, { id: "omarchy.power" }],
+        tray: [{ id: "reidenxerx.omagram" }]
+      }
+    }
+  }
+}
+
+function splitGeometry() {
+  const at = { "omarchy.menu": 8, "omarchy.workspaces": 35, "omarchy.indicators": 900, "omarchy.clock": 935,
+               "omarchy.weather": 990, "omarchy.system-update": 1017, "omarchy.tray": 1800, "omarchy.audio": 1840,
+               "omarchy.power": 1870 }
+  const sectionOf = { "omarchy.menu": "left", "omarchy.workspaces": "left", "omarchy.indicators": "centerBegin",
+                      "omarchy.clock": "center", "omarchy.weather": "centerEnd", "omarchy.system-update": "centerEnd",
+                      "omarchy.tray": "right", "omarchy.audio": "right", "omarchy.power": "right" }
+  const out = Object.keys(at).map((id) => ({ id, section: sectionOf[id], x: at[id], y: 0,
+                                             width: id === "omarchy.clock" ? 50 : 27, height: 27, visible: true }))
+  out.push({ id: "reidenxerx.omagram", section: "tray", x: 0, y: 0, width: 0, height: 0, visible: false })
+  return out
+}
+
+test("a bar with the center box is read in its own shape; a classic one stays in three", () => {
+  const bar = M.readBar(splitFixture())
+  eq(Object.keys(bar.sections), ["left", "centerBegin", "center", "centerEnd", "right", "tray"])
+  eq(bar.sections.tray.map((e) => e.id), ["reidenxerx.omagram"])
+  eq(Object.keys(M.readBar(fixture()).sections), ["left", "center", "right"])
+  eq(M.sectionLabel("centerEnd"), "after center")
+  const chips = M.chips(splitGeometry(), bar)
+  eq(M.barOrder(chips).map((c) => c.section + ":" + c.id).slice(1, 6),
+     ["left:omarchy.workspaces", "centerBegin:omarchy.indicators", "center:omarchy.clock", "centerEnd:omarchy.weather",
+      "centerEnd:omarchy.system-update"])
+  eq(chips.filter((c) => c.section === "tray").map((c) => c.shown), [false])
+})
+
+test("nudges run through the box's sections and never into the tray drawer", () => {
+  const bar = M.readBar(splitFixture())
+  const chips = M.chips(splitGeometry(), bar)
+  const clock = chips.find((c) => c.id === "omarchy.clock")
+  eq(M.nudgeTarget(bar, clock, -1), { section: "centerBegin", index: 1 })
+  eq(M.nudgeTarget(bar, clock, 1), { section: "centerEnd", index: 0 })
+  const power = chips.find((c) => c.id === "omarchy.power")
+  eq(M.nudgeTarget(bar, power, 1), null)
+  const indicators = chips.find((c) => c.id === "omarchy.indicators")
+  eq(M.nudgeTarget(bar, indicators, -1), { section: "left", index: 2 })
+})
+
+test("drops on a bar with the center box land before it, in it or after it, and the marker follows", () => {
+  const config = splitFixture()
+  config.bar.layout.centerBegin = []
+  const bar = M.readBar(config)
+  const geometry = splitGeometry().filter((g) => g.id !== "omarchy.indicators")
+  const chips = M.chips(geometry, bar)
+  const audio = chips.find((c) => c.id === "omarchy.audio")
+  const zones = M.dropZones(bar, chips, audio, 1920)
+  eq(zones.map((z) => z.section), ["left", "centerBegin", "center", "centerEnd", "right"])
+  eq([zones[2].start, zones[2].start + zones[2].length], [935, 985])
+  // Far from any widget, just short of the box: the empty centerBegin, marked at the box's edge.
+  const before = M.dropTarget(bar, chips, audio, { x: 760, y: 10 }, 1920)
+  eq(before, { section: "centerBegin", index: 0 })
+  eq(M.dropMarker(bar, chips, audio, before, 1920), 935)
+  // Beside the clock: in the box.
+  eq(M.dropTarget(bar, chips, audio, { x: 975, y: 10 }, 1920), { section: "center", index: 1 })
+  // Past the box and its widgets: the near end of centerEnd's widgets.
+  eq(M.dropTarget(bar, chips, audio, { x: 1200, y: 10 }, 1920), { section: "centerEnd", index: 2 })
+  // An empty box still takes drops in the middle of the bar.
+  const clock = chips.find((c) => c.id === "omarchy.clock")
+  const empty = M.dropZones(bar, chips, clock, 1920).find((z) => z.section === "center")
+  assert(empty.length > 0 && empty.start < 960 && empty.start + empty.length > 960)
+  // A classic bar still splits in thirds.
+  eq(M.dropZones(M.readBar(fixture()), [], null, 1920).map((z) => [z.section, z.start]),
+     [["left", 0], ["center", 640], ["right", 1280]])
+})
+
+test("added widgets: a manifest's center goes beside the clock, and sections the bar lacks are refused", () => {
+  const split = M.readBar(splitFixture())
+  eq(M.addPlace(split, null, { defaultSection: "center" }), { section: "centerEnd", index: 2 })
+  eq(M.addPlace(split, null, {}), { section: "centerEnd", index: 2 })
+  eq(M.addPlace(split, null, { defaultSection: "centerBegin" }), { section: "centerBegin", index: 1 })
+  const classic = M.readBar(fixture())
+  eq(M.addPlace(classic, null, { defaultSection: "centerEnd" }), { section: "center", index: 3 })
+  eq(M.addChange(classic, "omarchy.battery", "centerEnd", 0), null)
+  assert(M.addChange(split, "omarchy.battery", "centerEnd", 0))
+  const chip = M.chips(geometryFor(fixture()), classic)[0]
+  eq(M.moveChange(classic, chip, { section: "centerBegin", index: 0 }), null)
+})
+
+test("a layout saved before the box keeps its center whole in it; one saved with it runs together on a classic bar", () => {
+  const classicLayout = M.snapshot(M.readBar(fixture()), "Old")
+  const config = splitFixture()
+  const calls = M.planLayout(M.readBar(config), classicLayout)
+  simulate(config, calls)
+  const L = config.bar.layout
+  const ids = (s) => L[s].map((e) => (typeof e === "string" ? e : e.id))
+  eq(ids("center"), ["omarchy.indicators", "omarchy.clock", "omarchy.weather"])
+  eq([ids("centerBegin"), ids("centerEnd")], [[], []])
+  assert(M.wears(M.readBar(config), classicLayout), "the bar wears the old layout afterwards")
+
+  const splitLayout = M.snapshot(M.readBar(splitFixture()), "New")
+  const back = fixture()
+  simulate(back, M.planLayout(M.readBar(back), splitLayout))
+  eq(back.bar.layout.center.map((e) => e.id),
+     ["omarchy.indicators", "omarchy.clock", "omarchy.weather", "omarchy.system-update"])
+  eq(back.bar.layout.right.map((e) => e.id).filter((id) => id !== "omarchy.spacer"),
+     ["omarchy.tray", "omarchy.audio", "omarchy.power", "reidenxerx.omagram"], "the drawer's widgets close the right")
+  assert(M.wears(M.readBar(back), splitLayout))
+  // And a layout saved with the box goes back on its own kind of bar exactly.
+  const again = splitFixture()
+  again.bar.layout.center.push(again.bar.layout.centerEnd.shift())
+  simulate(again, M.planLayout(M.readBar(again), splitLayout))
+  eq(M.snapshot(M.readBar(again), "New"), splitLayout)
 })
 
 console.log(passed + " passed, " + failed + " failed")

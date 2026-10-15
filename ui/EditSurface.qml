@@ -201,16 +201,17 @@ Item {
       }
     }
 
-    // The thirds of the bar a widget can be dropped into, shown while one is dragged.
+    // The stretches of the bar a widget can be dropped into, shown while one is dragged: thirds, and on a bar with
+    // the center box, the middle third split at the box's edges.
     Repeater {
-      model: surface.dragging ? ["left", "center", "right"] : []
+      model: surface.dragChip ? Model.dropZones(surface.bar, surface.chipList, surface.dragChip, surface.barLength) : []
       delegate: Item {
         required property int index
         required property var modelData
-        x: surface.vertical ? 0 : index * barFrame.width / 3
-        y: surface.vertical ? index * barFrame.height / 3 : 0
-        width: surface.vertical ? barFrame.width : barFrame.width / 3
-        height: surface.vertical ? barFrame.height / 3 : barFrame.height
+        x: surface.vertical ? 0 : modelData.start
+        y: surface.vertical ? modelData.start : 0
+        width: surface.vertical ? barFrame.width : modelData.length
+        height: surface.vertical ? modelData.length : barFrame.height
 
         Rectangle {
           visible: index > 0
@@ -224,8 +225,8 @@ Item {
           // this plugin only truncates. Rendered literally, not interpreted.
           textFormat: Text.PlainText
           anchors.centerIn: parent
-          visible: !surface.vertical
-          text: modelData
+          visible: !surface.vertical && implicitWidth + Style.space(2) <= parent.width
+          text: Model.sectionLabel(modelData.section)
           color: surface.alpha(surface.accent, 0.5)
           font.family: surface.fontFamily
           font.pixelSize: Style.font.caption

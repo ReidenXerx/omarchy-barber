@@ -62,7 +62,7 @@ Item {
           width: parent.width
           wrapMode: Text.Wrap
           text: !form.chip ? ""
-            : form.chip.id + " · " + form.chip.section + " side"
+            : form.chip.id + " · " + Model.sectionLabel(form.chip.section)
               + (form.chip.instances > 1 ? " · on the bar " + form.chip.instances + " times; these settings are for this one" : "")
           color: form.faint
           font.family: Style.font.family
