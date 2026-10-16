@@ -161,9 +161,9 @@ Item {
             id: numberField
             Item {
               implicitHeight: spin.implicitHeight
-              NumberField {
+              // Barber's own box rather than the shell's NumberField, whose editable text reads the clipboard.
+              StepField {
                 id: spin
-                label: ""
                 value: Number(row.field.value) || 0
                 from: row.field.min !== null ? row.field.min : 0
                 to: row.field.max !== null ? row.field.max : 100000
